@@ -2,6 +2,8 @@ import os
 import requests
 import pandas as pd
 
+from src.logger_manager import LoggerManager
+
 
 class CryptoDataFetcher:
     def __init__(
@@ -16,6 +18,9 @@ class CryptoDataFetcher:
         self.base_url = "https://min-api.cryptocompare.com/data/v2/histoday"
         self.api_key = os.getenv("CRYPTO_API_KEY")
 
+        # Set up the logger using LoggerManager
+        self.logger = LoggerManager(__name__).get_logger()
+
     @property
     def api_key(self):
         """Getter for the API key"""
@@ -25,6 +30,7 @@ class CryptoDataFetcher:
     def api_key(self, value):
         """Setter for the API key"""
         if value is None or value == "":
+            self.logger.error("API key cannot be None or empty.")
             raise ValueError("API key cannot be None or empty.")
         self._api_key = value
 
@@ -65,4 +71,6 @@ class CryptoDataFetcher:
                 f'{self.symbol}_in_{self.currency}_historical_data.csv'
             )
             df.to_csv(file_path, sep=",", index=False)
+            self.logger.info(f"Crypto data save as {file_path}")
+
         return df
