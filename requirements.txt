@@ -1,7 +1,8 @@
 matplotlib
 numpy 
-pandas 
-requests 
+pandas
+PyYAML
+requests
 scikit-learn 
 seaborn 
 streamlit 
