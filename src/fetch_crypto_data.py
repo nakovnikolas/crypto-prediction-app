@@ -9,8 +9,8 @@ class CryptoDataFetcher:
     def __init__(
             self,
             symbol,
-            currency,
-            limit
+            currency="USD",
+            limit=365
     ) -> None:
         self.symbol = symbol
         self.currency = currency
