@@ -1,8 +1,10 @@
+import os
 import unittest
 from unittest.mock import patch, MagicMock
-import os
+
 import pandas as pd
-from src.crypto_data_fetcher import CryptoDataFetcher
+
+from src.fetch_crypto_data import CryptoDataFetcher
 
 
 class TestCryptoDataFetcher(unittest.TestCase):
