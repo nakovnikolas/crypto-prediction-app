@@ -4,6 +4,7 @@ pandas
 PyYAML
 requests
 scikit-learn 
-seaborn 
+seaborn
+statsmodel
 streamlit 
 xgboost
