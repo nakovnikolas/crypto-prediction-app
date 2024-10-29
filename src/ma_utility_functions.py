@@ -3,17 +3,20 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from src.model_utility_functions import split_data
+from src.logger_manager import LoggerManager
+
+logger = LoggerManager(__name__).get_logger()
 
 
 def evaluate_moving_average(train, test, window_size):
     """
     Evaluates a simple moving average model with a given window size.
-    
+
     Parameters:
         train (pd.Series): Training set of the time series.
         test (pd.Series): Test set of the time series.
         window_size (int): Size of the moving average window.
-    
+
     Returns:
         float: Mean Squared Error of the model on the test set.
         pd.Series: Predicted values.
@@ -26,24 +29,26 @@ def evaluate_moving_average(train, test, window_size):
         window_data = train[-window_size:]  # Get the last `window_size` data points from the training set
         prediction = window_data.mean()  # Calculate the average of the window
         predictions.append(prediction)
-        
-        # Update train data with the current test point
-        train = pd.concat([train, pd.Series([test.iloc[i]], index=[test.index[i]])])  # Concatenate instead of append
 
-    predictions = pd.Series(predictions, index=test.index)  # Convert predictions list to a pandas Series
+        # Update train data with the current test point
+        train = pd.concat(
+            [train, pd.Series([test.iloc[i]], index=[test.index[i]])]
+        )  # Concatenate instead of append
+
+    # Convert predictions list to a pandas Series
+    predictions = pd.Series(predictions, index=test.index)
     error = np.mean((test - predictions) ** 2)  # Calculate Mean Squared Error
     return error, predictions
-
 
 
 def compare_moving_average_windows(data, window_sizes):
     """
     Compares the performance of simple moving average models with different window sizes.
-    
+
     Parameters:
         data (pd.Series): Time series data.
         window_sizes (list of int): List of window sizes to evaluate.
-    
+
     Returns:
         dict: Dictionary with window sizes as keys and their MSE values as values.
         dict: Dictionary with window sizes as keys and their predictions as values.
@@ -65,7 +70,7 @@ def compare_moving_average_windows(data, window_sizes):
 def plot_moving_average_predictions(test, predictions_dict):
     """
     Plots the actual values and predictions from different moving average window sizes.
-    
+
     Parameters:
         test (pd.Series): Actual test set values.
         predictions_dict (dict): Dictionary with window sizes as keys and predictions as values.
@@ -87,3 +92,11 @@ def plot_moving_average_predictions(test, predictions_dict):
     plt.grid(True)
     plt.show()
 
+
+def extract_ma(df: pd.DataFrame, window_sizes: list[int]) -> pd.DataFrame:
+    if "price" in df.columns:
+        for window in window_sizes:
+            df[f"ma_{window}"] = df["price"].rolling(window).mean()
+    else:
+        logger.error("'Price' column not in DataFrame.")
+    return df.dropna()

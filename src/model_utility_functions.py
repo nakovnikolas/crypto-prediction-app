@@ -1,14 +1,18 @@
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import cross_val_score, KFold
+from sklearn.metrics import mean_absolute_error
 
+from src.logger_manager import LoggerManager
+
+logger = LoggerManager(__name__).get_logger()
 
 
 def preprocess_data(df, date_col="date"):
     if date_col in df.columns:
         df[date_col] = pd.to_datetime(df[date_col])
         df.set_index(date_col, inplace=True)
-    df = df["close"]
-    df = df.asfreq('D')
+    df = df.rename(columns={"close": "price"})["price"].asfreq("D")
     return df
 
 
@@ -54,34 +58,29 @@ def split_data(data, train_ratio=0.8):
     return train, test
 
 
+def evaluate_model(y_test, y_pred, model_name):
+    mae = mean_absolute_error(y_test, y_pred)
+    mse = mean_squared_error(y_test, y_pred)
+    logger.info(f'{model_name} - Mean Absolute Error (MAE): {mae}')
+    logger.info(f'{model_name} - Mean Squared Error (MSE): {mse}')
+    return mae, mse
 
 
+def cross_validation_scores(model, X, y):
+    kf = KFold(n_splits=10, shuffle=True, random_state=42)
+    cv_scores = cross_val_score(
+        model,
+        X,
+        y,
+        cv=kf,
+        scoring='neg_mean_absolute_error'
+    )
+    logger.info(f"Cross-validation MAE: {np.mean(-cv_scores):.4f} ± {np.std(-cv_scores):.4f}")
+    return cv_scores
 
-def create_lag_features(df, n_lags):
-    for lag in range(1, n_lags + 1):
-        df[f'lag_{lag}'] = df["close"].shift(lag)
-    df = df.dropna().reset_index()
-    return df
 
-
-def extract_features(df):
-    # Moving averages as features
-    df["ma_7"] = df["close"].rolling(window=7).mean()
-    df["ma_30"] = df["close"].rolling(window=30).mean()
-
-    # RSI as a feature
-    delta = df["close"].diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-    rs = gain / loss
-    df["rsi"] = 100 - (100 / (1 + rs))
-
-    # Add time-lagged features
-    df["lag_1"] = create_lag_features(df, 1)
-    df["lag_3"] = create_lag_features(df, 3)
-    df["lag_7"] = create_lag_features(df, 7)
-
-    # Fill any missing values that result from the rolling calculations
-    df.fillna(method="ffill", inplace=True)
-
-    return df
+def prepare_prophet_data(df):
+    prophet_df = df[['price']].rename(columns={'price': 'y'})
+    prophet_df['ds'] = df.index[:len(prophet_df)]
+    prophet_df = prophet_df[['ds', 'y']] 
+    return prophet_df

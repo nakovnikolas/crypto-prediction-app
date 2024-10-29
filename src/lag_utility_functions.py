@@ -1,6 +1,12 @@
+import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.ar_model import AutoReg
+
+from model_utility_functions import mean_squared_error, split_data
+from src.logger_manager import LoggerManager
+
+logger = LoggerManager(__name__).get_logger()
 
 
 def plot_acf_pacf(data, lags=20):
@@ -38,7 +44,11 @@ def evaluate_ar_model(train, test, lag_set):
     """
     model = AutoReg(train, lags=lag_set)
     model_fit = model.fit()
-    predictions = model_fit.predict(start=len(train), end=len(train)+len(test)-1, dynamic=False)
+    predictions = model_fit.predict(
+        start=len(train),
+        end=len(train)+len(test)-1,
+        dynamic=False
+    )
     error = mean_squared_error(test, predictions)
     return error, predictions
 
@@ -55,8 +65,7 @@ def compare_lag_sets(data, lag_sets):
         dict: Dictionary with lag sets as keys and their MSE values as values.
     """
     # Train-test split (e.g., using the last 20% for testing)
-    train_size = int(len(data) * 0.8)
-    train, test = data[:train_size], data[train_size:]
+    train, test = split_data(data)
 
     results = {}
     for lags in lag_sets:
@@ -114,6 +123,15 @@ def plot_predictions(test, predictions_dict, zoom_in=False, zoom_range=50):
     plt.title('Actual vs. Predicted Prices with Different Lag Sets')
     plt.xlabel('Time')
     plt.ylabel('Price')
-    plt.legend(loc='down right', fontsize='medium')
+    plt.legend(loc='lower right', fontsize='medium')
     plt.grid(True)
     plt.show()
+
+
+def extract_lags(df: pd.DataFrame, lags: list[int]) -> pd.DataFrame:
+    if "price" in df.columns:
+        for lag in lags:
+            df[f"kur_{lag}"] = df["price"].shift(lag).dropna()
+    else:
+        logger.error("'Price' column not in DataFrame.")
+    return df.dropna()
