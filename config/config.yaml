@@ -1,19 +1,23 @@
-general:
-    random_state: 42
-
-model:
-    type: RandomForestClassifier
-    n_estimators: 100
-    max_depth: 10
-
-data:
-    train_path: data/train.csv
-    test_path: data/test.csv
-    target_column: target
-
-training:
-    test_size: 0.2
-    cross_validation_folds: 5
-
-output:
-    model_save_path: models/best_model.pkl
+        general:
+            random_state: 42
+        
+        model:
+            library: sklearn.ensemble
+            name: RandomForestClassifier
+            model_params:
+                n_estimators: 100
+                max_depth: 10
+                min_sample_split: 2
+                min_sample_leaf: 2
+                bootstrap: True
+        
+        features:
+            lags: 1, 7, 10
+            windows: 3, 5, 7
+        
+        training:
+            test_size: 0.2
+            cross_validation_folds: 5
+        
+        output:
+            model_save_path: models/best_model.pkl
