@@ -36,7 +36,7 @@ def mean_squared_error(y_true, y_pred):
     return mse
 
 
-def split_data(data, train_ratio=0.8):
+def split_data(data, test_size=0.2):
     """
     Splits the time series data into training and testing sets based on the specified ratio.
 
@@ -49,6 +49,7 @@ def split_data(data, train_ratio=0.8):
         pd.Series: Testing data.
     """
     # Calculate the index for splitting the data
+    train_ratio = 1 - test_size
     train_size = int(len(data) * train_ratio)
 
     # Split the data into train and test sets

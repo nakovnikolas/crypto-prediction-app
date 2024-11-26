@@ -1,9 +1,14 @@
+from datetime import timedelta
 import pandas as pd
+import pickle
 import yaml
 import importlib
 
-from model_utility_functions import preprocess_data
+from sklearn.model_selection import cross_val_score
+
+from model_utility_functions import preprocess_data, split_data
 from lag_utility_functions import extract_lags
+from logger_manager import LoggerManager
 from ma_utility_functions import extract_ma
 
 
@@ -12,6 +17,9 @@ class CryptoForecastModel:
         # Load configuration from YAML
         with open(config_path, "r") as file:
             config = yaml.safe_load(file)
+
+        # Set the logger
+        self.logger = LoggerManager(__name__).get_logger()
 
         # General configuration
         self.random_state = config["general"].get("random_state", 42)
@@ -83,3 +91,56 @@ class CryptoForecastModel:
         y = combined_df['y']
 
         return X, y
+
+    def prepare_train_test_split(self, X, y):
+        """
+        Split the data into training and testing sets
+        based on the test size.
+        """
+        X_train, X_test = split_data(X, test_size=self.test_size)
+        y_train, y_test = split_data(y, test_size=self.test_size)
+
+        return X_train, X_test, y_train, y_test
+
+    def train_model(self, X_train, y_train):
+        """Train the model on the training data with cross-validation."""
+        # Cross-validation
+        scores = cross_val_score(
+            self.model,
+            X_train,
+            y_train,
+            cv=self.cv_folds,
+            scoring="neg_mean_squared_error"
+        )
+        self.model.fit(X_train, y_train)
+
+        self.logger.info(f"Cross-Validation MSE: {-scores.mean()}")
+
+    def forecast(self, X_last, future_days=30):
+        """Generate forecasted values for the next specified number of days."""
+        predictions = []
+        last_row = X_last.iloc[-1]
+
+        for _ in range(future_days):
+            pred = self.model.predict([last_row])[0]
+            predictions.append(pred)
+
+            # Shift features for next day prediction
+            last_row = last_row.shift(1)
+            last_row.iloc[0] = pred
+
+        # Return predictions as a DataFrame with dates
+        forecast_dates = pd.date_range(
+            start=X_last.index[-1] + timedelta(days=1),
+            periods=future_days
+        )
+        forecast_df = pd.DataFrame(
+            {"date": forecast_dates, "forecasted_price": predictions}
+        )
+        return forecast_df.set_index("date")
+
+    def save_model(self):
+        """Save the trained model to the specified path."""
+        with open(self.model_save_path, "wb") as f:
+            pickle.dump(self.model, f)
+        self.logger.info(f"Model saved to {self.model_save_path}")
