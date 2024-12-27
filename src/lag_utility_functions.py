@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.ar_model import AutoReg
 
-from model_utility_functions import mean_squared_error, split_data
+from src.model_utility_functions import mean_squared_error, split_data
 from src.logger_manager import LoggerManager
 
 logger = LoggerManager(__name__).get_logger()

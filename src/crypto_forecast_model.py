@@ -5,10 +5,10 @@ import pickle
 import yaml
 import importlib
 
-from model_utility_functions import preprocess_data, split_data
-from lag_utility_functions import extract_lags
-from logger_manager import LoggerManager
-from ma_utility_functions import extract_ma
+from src.model_utility_functions import preprocess_data, split_data
+from src.lag_utility_functions import extract_lags
+from src.logger_manager import LoggerManager
+from src.ma_utility_functions import extract_ma
 
 
 class CryptoForecastModel:
