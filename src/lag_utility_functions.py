@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.ar_model import AutoReg
 
-from model_utility_functions import mean_squared_error, split_data
+from src.model_utility_functions import mean_squared_error, split_data
 from src.logger_manager import LoggerManager
 
 logger = LoggerManager(__name__).get_logger()
@@ -78,12 +78,15 @@ def compare_lag_sets(data, lag_sets):
 
 def plot_predictions(test, predictions_dict, zoom_in=False, zoom_range=50):
     """
-    Plots the actual values and predictions from different lag sets with improved visualization.
+    Plots the actual values and predictions from different lag sets
+    with improved visualization.
 
     Parameters:
         test (pd.Series): Actual test set values.
-        predictions_dict (dict): Dictionary with lag sets as keys and predictions as values.
-        zoom_in (bool): If True, zoom in to a subset of the test data for better visualization.
+        predictions_dict (dict): Dictionary with lag sets as keys
+        and predictions as values.
+        zoom_in (bool): If True, zoom in to a subset of the test data
+        for better visualization.
         zoom_range (int): The number of data points to display when zooming in.
     """
     plt.figure(figsize=(14, 8))
@@ -129,9 +132,34 @@ def plot_predictions(test, predictions_dict, zoom_in=False, zoom_range=50):
 
 
 def extract_lags(df: pd.DataFrame, lags: list[int]) -> pd.DataFrame:
-    if "price" in df.columns:
-        for lag in lags:
-            df[f"kur_{lag}"] = df["price"].shift(lag).dropna()
-    else:
+    """
+    Add lag features to the DataFrame for the specified lags.
+
+    Parameters:
+        df (pd.DataFrame): The input DataFrame containing a 'price' column.
+        lags (list[int]): A list of integers
+                          representing the lags to calculate.
+
+    Returns:
+        pd.DataFrame: The DataFrame with lag features added.
+    """
+    if "price" not in df.columns:
         logger.error("'Price' column not in DataFrame.")
-    return df.dropna()
+        return df
+
+    try:
+        # Ensure the 'price' column is numeric
+        df["price"] = pd.to_numeric(df["price"], errors="coerce")
+
+        # Create lag features
+        for lag in lags:
+            df[f"lag_{lag}"] = df["price"].shift(lag)
+
+        # Drop rows with NaNs introduced by shifting
+        df = df.dropna()
+
+    except Exception as e:
+        logger.error(f"Error while extracting lags: {e}")
+        raise
+
+    return df
