@@ -51,8 +51,8 @@ class TestCryptoForecastModel(unittest.TestCase):
         self.assertEqual(self.model.windows, [3, 5])
         self.assertIn("BTC", self.model.crypto_mapping)
 
-    @patch("CryptoForecastModel.extract_lags")
-    @patch("CryptoForecastModel.extract_ma")
+    @patch("src.lag_utility_functions.extract_lags")
+    @patch("src.ma_utility_functions.extract_ma")
     def test_preprocess_and_combine_data(
         self,
         mock_extract_ma,
@@ -77,7 +77,7 @@ class TestCryptoForecastModel(unittest.TestCase):
 
         X, y = self.model.preprocess_and_combine_data(crypto_data_dict)
         self.assertIn("currency_id", X.columns)
-        self.assertIn("price", y.index)
+        self.assertTrue(isinstance(y, pd.Series))
 
     def test_prepare_train_test_split(self):
         # Generate sample data
@@ -102,7 +102,7 @@ class TestCryptoForecastModel(unittest.TestCase):
     @patch("sklearn.ensemble.RandomForestClassifier.predict")
     def test_forecast(self, mock_predict):
         # Prepare sample data
-        mock_predict.side_effect = [10, 11, 12]
+        mock_predict.side_effect = [[10], [11], [12]]
 
         X = pd.DataFrame({
             "currency_id": [0] * 3,

@@ -79,8 +79,14 @@ class CryptoForecastModel:
         combined_data = []
         for currency_id, (_, df) in\
                 enumerate(crypto_data_dict.items()):
-            # Preprocess and add features
+            # Preprocess
             df = preprocess_data(df)
+
+            # Ensure df is a DataFrame
+            if isinstance(df, pd.Series):
+                df = df.to_frame()
+
+            # Add features
             df = extract_lags(df, self.lags)
             df = extract_ma(df, self.windows)
 
